@@ -65,6 +65,8 @@ def stop_condition(evaluated, epsilon, old_population):
 def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr):
     populacja = [[randint(2) for _ in range(len(granice)*ilosc_bitow)] for _ in range(ilosc_populacji)]
 
+    sorted(populacja, key= lambda individual: boundries_based_decode(ilosc_bitow, individual) , reverse=True)
+
     print(populacja)
 
     najlepsze_wartosci = 0
@@ -108,6 +110,7 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
 
     x = np.arange(granice[0],granice[1],0.1)
     plt.plot(x_axis,eval(func))
+    plt.show()
     return najlepsze_wartosci, najlepsze_populacje
 
 
