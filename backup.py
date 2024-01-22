@@ -2,6 +2,8 @@ from numpy.random import randint
 from numpy.random import rand
 import matplotlib.pyplot as plt
 import numpy as np
+from math import *
+from statistics import *
 
 func = input("Podaj funkcję: ")
 def input_function(x):
@@ -22,6 +24,7 @@ def boundries_based_decode(bit_len,encoded):
         decoded.append(scaled)
     return decoded
 
+#FIXME(11jolek11): No normalization of probab
 def roulette_wheel_selection(populacja,values, k_hipherparameter=3):
     roulette_wheel_selection_losowa = randint(len(populacja))
     for i in range(0,len(populacja),k_hipherparameter-1):
@@ -52,35 +55,61 @@ def mutate(encoded, mutation_probability=0.01):
         if rand() < mutation_probability:
             encoded[i] = 1 - encoded[i]
 
+# TODO(11jolek11): add stop condition to algorytm genetyczny
+def stop_condition(evaluated, epsilon, old_population):
+    if abs(mean(evaluated) - mean(old_population)) <= epsilon:
+        return True, mean(evaluated)
+
+    return False, mean(evaluated)
+
 def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr):
-    populacja = [[randint(2) for i in range(len(granice)*ilosc_bitow)] for j in range(ilosc_populacji)]
+    populacja = [[randint(2) for _ in range(len(granice)*ilosc_bitow)] for _ in range(ilosc_populacji)]
+
     print(populacja)
-    najlepsze_wartosci, najlepsze_populacje = 0, zadana_funkcja(boundries_based_decode(ilosc_bitow,populacja[0]))
-    for generacja in range(ilosc_iteracji):
+
+    najlepsze_wartosci = 0
+    najlepsze_populacje = zadana_funkcja(boundries_based_decode(ilosc_bitow, populacja[0]))
+
+    stare_wartoci = [0 for _ in range(ilosc_populacji)]
+    
+    for _ in range(ilosc_iteracji):
         zdekodowana_populacja = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
         wartosci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_populacja]
+        
         for i in range(ilosc_populacji):
             if wartosci[i] < najlepsze_populacje:
                 najlepsze_wartosci, najlepsze_populacje = populacja[i], wartosci[i]
-                print( f"Najlepsza wartość f({zdekodowana_populacja[i][0]}) = ", wartosci[i])
+                print( f"Best value at {zdekodowana_populacja[i][0]} is {wartosci[i]} ")
+        
+        stop_signal, _ = stop_condition(wartosci, 1e-6, stare_wartoci)
+        if stop_signal:
+            print(">> STOP CRITERION")
+            break
+
         wybrani_rodzice = [roulette_wheel_selection(populacja,wartosci) for i in range(ilosc_populacji)]
+        
         potomstwo = list()
+        
         for i in range(0,ilosc_populacji,2):
             rodzic1, rodzic2 = wybrani_rodzice[i], wybrani_rodzice[i+1]
             for dziecko in single_point_cross(rodzic1,rodzic2):
                 mutate(dziecko,mutacja_hiperparametr)
                 potomstwo.append(dziecko)
         populacja = potomstwo
+        zdekodowana_potomstwo = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
+        stare_wartoci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_potomstwo]
+    
+    
     plt.figure()
-    plt.title(f"Algorytm genetyczny dla funkcji {func}")
+    plt.title(f"Wybrana funkcja {func}")
   
-    plt.plot(zdekodowana_populacja,wartosci,'x',color='black')
+    plt.plot(zdekodowana_populacja,wartosci,'x',color='green')
     x_axis = np.arange(granice[0],granice[1],0.1)
 
     x = np.arange(granice[0],granice[1],0.1)
     plt.plot(x_axis,eval(func))
-    return [najlepsze_wartosci, najlepsze_populacje]
-                
+    return najlepsze_wartosci, najlepsze_populacje
+
 
 granice =[-8,8]
 ilosc_iteracji = 100
