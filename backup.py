@@ -24,11 +24,10 @@ def boundries_based_decode(bit_len,encoded):
         decoded.append(scaled)
     return decoded
 
-#FIXME(11jolek11): No normalization of probab
 def roulette_wheel_selection(populacja,values, k_hipherparameter=3):
     roulette_wheel_selection_losowa = randint(len(populacja))
     for i in range(0,len(populacja),k_hipherparameter-1):
-        if values[i] > values[roulette_wheel_selection_losowa]:
+        if values[i]/sum(values) > values[roulette_wheel_selection_losowa]:
             roulette_wheel_selection_losowa = i
     return populacja[roulette_wheel_selection_losowa]
 
@@ -55,7 +54,6 @@ def mutate(encoded, mutation_probability=0.01):
         if rand() < mutation_probability:
             encoded[i] = 1 - encoded[i]
 
-# TODO(11jolek11): add stop condition to algorytm genetyczny
 def stop_condition(evaluated, epsilon, old_population):
     if abs(mean(evaluated) - mean(old_population)) <= epsilon:
         return True, mean(evaluated)
