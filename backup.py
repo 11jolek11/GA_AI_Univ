@@ -80,17 +80,17 @@ def stop_condition(evaluated, epsilon, old_population):
 def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr):
     populacja = [[randint(2) for _ in range(len(granice)*ilosc_bitow)] for _ in range(ilosc_populacji)]
 
-    sorted(populacja, key= lambda individual: log_based_decode(ilosc_bitow, individual) , reverse=True)
+    sorted(populacja, key= lambda individual: boundries_based_decode(ilosc_bitow, individual) , reverse=True)
 
     print(populacja)
 
     najlepsze_wartosci = 0
-    najlepsze_populacje = zadana_funkcja(log_based_decode(ilosc_bitow, populacja[0]))
+    najlepsze_populacje = zadana_funkcja(boundries_based_decode(ilosc_bitow, populacja[0]))
 
     stare_wartoci = [0 for _ in range(ilosc_populacji)]
     
     for _ in range(ilosc_iteracji):
-        zdekodowana_populacja = [log_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
+        zdekodowana_populacja = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
         wartosci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_populacja]
         
         for i in range(ilosc_populacji):
@@ -109,11 +109,11 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
         
         for i in range(0,ilosc_populacji,2):
             rodzic1, rodzic2 = wybrani_rodzice[i], wybrani_rodzice[i+1]
-            for dziecko in single_point_cross(rodzic1,rodzic2):
+            for dziecko in double_point_cross(rodzic1,rodzic2):
                 mutate(dziecko,mutacja_hiperparametr)
                 potomstwo.append(dziecko)
         populacja = potomstwo
-        zdekodowana_potomstwo = [log_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
+        zdekodowana_potomstwo = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
         stare_wartoci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_potomstwo]
     
     
@@ -123,8 +123,11 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
     plt.plot(zdekodowana_populacja,wartosci,'x',color='green')
     x_axis = np.arange(granice[0],granice[1],0.1)
 
-    x = np.arange(granice[0],granice[1],0.1)
-    plt.plot(x_axis,eval(func))
+    # x = np.arange(granice[0],granice[1],0.1)
+    # FIXME(11jolek11): eval is not ok
+    full_func = eval("lambda x:" + func)
+    vfunc = np.vectorize(full_func)
+    plt.plot(x_axis, vfunc(x_axis))
     plt.show()
     return najlepsze_wartosci, najlepsze_populacje
 
