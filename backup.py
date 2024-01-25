@@ -24,6 +24,23 @@ def boundries_based_decode(bit_len,encoded):
         decoded.append(scaled)
     return decoded
 
+# NOTE: testuje kodowanie logarytmiczne
+def log_based_decode(bit_len, chromosome):
+    boundries = (-8.0, 8.0)
+    min_value, max_value = boundries[0], boundries[1]
+    decimal_value = int(''.join(map(str, chromosome)), 2)
+    
+    mapped_value = min_value * (max_value / min_value) ** (decimal_value / (2**len(chromosome) - 1))
+    
+    return mapped_value
+
+def log_based_encode(value, min_value, max_value, num_bits):
+    decimal_value = int((2**num_bits - 1) * (np.log(value / min_value) / np.log(max_value / min_value)))
+    
+    binary_representation = list(format(decimal_value, f'0{num_bits}b'))
+    
+    return binary_representation
+
 def roulette_wheel_selection(populacja,values, k_hipherparameter=3):
     roulette_wheel_selection_losowa = randint(len(populacja))
     for i in range(0,len(populacja),k_hipherparameter-1):
@@ -63,17 +80,17 @@ def stop_condition(evaluated, epsilon, old_population):
 def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr):
     populacja = [[randint(2) for _ in range(len(granice)*ilosc_bitow)] for _ in range(ilosc_populacji)]
 
-    sorted(populacja, key= lambda individual: boundries_based_decode(ilosc_bitow, individual) , reverse=True)
+    sorted(populacja, key= lambda individual: log_based_decode(ilosc_bitow, individual) , reverse=True)
 
     print(populacja)
 
     najlepsze_wartosci = 0
-    najlepsze_populacje = zadana_funkcja(boundries_based_decode(ilosc_bitow, populacja[0]))
+    najlepsze_populacje = zadana_funkcja(log_based_decode(ilosc_bitow, populacja[0]))
 
     stare_wartoci = [0 for _ in range(ilosc_populacji)]
     
     for _ in range(ilosc_iteracji):
-        zdekodowana_populacja = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
+        zdekodowana_populacja = [log_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
         wartosci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_populacja]
         
         for i in range(ilosc_populacji):
@@ -96,7 +113,7 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
                 mutate(dziecko,mutacja_hiperparametr)
                 potomstwo.append(dziecko)
         populacja = potomstwo
-        zdekodowana_potomstwo = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
+        zdekodowana_potomstwo = [log_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
         stare_wartoci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_potomstwo]
     
     
