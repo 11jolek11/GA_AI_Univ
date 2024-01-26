@@ -54,9 +54,22 @@ def selekcja(population, fitness_values):
 #     population_and_fitness = list(zip(population, fitness_values))
 #     population_and_fitness.sort(key=lambda x: x[1])
 
-def selekcja_ruletkowa(populacja, funkcja_oceny):
+def selekcja_r(populacja, wartosci_przystosowania, funkcja_oceny):
     suma_ocen = sum(funkcja_oceny(osobnik) for osobnik in populacja)
     prawdopodobienstwa = [funkcja_oceny(osobnik) / suma_ocen for osobnik in populacja]
+    ruletka = [sum(prawdopodobienstwa[:i+1]) for i in range(len(prawdopodobienstwa))]
+    nowa_populacja = []
+    for _ in range(2):
+        losowy = rand()
+        for (i, osobnik) in enumerate(populacja):
+            if losowy <= ruletka[i]:
+                nowa_populacja.append(osobnik)
+                break
+    return nowa_populacja[0], nowa_populacja[1]
+
+def selekcja_r(populacja, wartosci_przystosowania):
+    suma_ocen = sum(wartosci_przystosowania)
+    prawdopodobienstwa = [wartosci_przystosowania[osobnik] / suma_ocen for osobnik in range(len(populacja))]
     ruletka = [sum(prawdopodobienstwa[:i+1]) for i in range(len(prawdopodobienstwa))]
     nowa_populacja = []
     for _ in range(2):
@@ -115,7 +128,7 @@ def algorytm_genetyczny(ilosc_bitow: int, licznosc_populacji: int, fitness: call
         nowa_populacja = []
 
         for i in range(0, licznosc_populacji, 2):
-            parent1, parent2 = selekcja(populacja, wartosci_przystosowania)
+            parent1, parent2 = selekcja_r(populacja, wartosci_przystosowania)
             # nowa_populacja.append(parent1)
             # nowa_populacja.append(parent2)
 
