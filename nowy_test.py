@@ -8,7 +8,7 @@ from copy import copy
 
 
 
-GRANICE = (-8, 8)
+GRANICE = (-8 + 1e-12, 8 - 1e-12)
 
 def get_function(sequence: str):
     return eval("lambda x:" + sequence)
@@ -54,6 +54,18 @@ def selekcja(population, fitness_values):
 #     population_and_fitness = list(zip(population, fitness_values))
 #     population_and_fitness.sort(key=lambda x: x[1])
 
+def selekcja_ruletkowa(populacja, funkcja_oceny):
+    suma_ocen = sum(funkcja_oceny(osobnik) for osobnik in populacja)
+    prawdopodobienstwa = [funkcja_oceny(osobnik) / suma_ocen for osobnik in populacja]
+    ruletka = [sum(prawdopodobienstwa[:i+1]) for i in range(len(prawdopodobienstwa))]
+    nowa_populacja = []
+    for _ in range(2):
+        losowy = rand()
+        for (i, osobnik) in enumerate(populacja):
+            if losowy <= ruletka[i]:
+                nowa_populacja.append(osobnik)
+                break
+    return nowa_populacja[0], nowa_populacja[1]
 
 
 def krzyzowanie(rodzic1,rodzic2):
@@ -69,7 +81,7 @@ def mutacja(zakodowana_wartosc, mutacja_hiperparametr=0.01):
         if rand() < mutacja_hiperparametr:
             zakodowana_wartosc[i] = 1 - zakodowana_wartosc[i]
 
-def algorytm_genetyczny(ilosc_bitow: int, licznosc_populacji: int, fitness: callable, generation_num: int):
+def algorytm_genetyczny(ilosc_bitow: int, licznosc_populacji: int, fitness: callable, generation_num: int, mut_score: float):
 
     # Generacja populacji
     populacja = [[randint(2) for _ in range(len(GRANICE)*ilosc_bitow)] for _ in range(licznosc_populacji)]
@@ -108,14 +120,14 @@ def algorytm_genetyczny(ilosc_bitow: int, licznosc_populacji: int, fitness: call
             # nowa_populacja.append(parent2)
 
             # crossover
-            cross_over_rate=0.8
+            cross_over_rate=1
             if rand() < cross_over_rate:
                 child1, child2 = krzyzowanie(parent1, parent2)
             else:
                 child1, child2 = parent1, parent2
 
-            mutacja(child1)
-            mutacja(child2)
+            mutacja(child1, mut_score)
+            mutacja(child2, mut_score)
             
             nowa_populacja.append(child1)
             nowa_populacja.append(child2)
@@ -131,23 +143,31 @@ def algorytm_genetyczny(ilosc_bitow: int, licznosc_populacji: int, fitness: call
 
 
 if __name__ == "__main__":
+    plt.rcParams["figure.figsize"] = (5,5)
     # func_str = input("Give funct eq: ")
 
-    # f_string = get_function("-0.5*x**3")
-    # f_string = get_function("x**2")
+    # insider = "-0.5*x**3"
+    # insider = "x**2"
     insider = "sin(0.25*x**2) - cos(0.125*x**2)"
+    ilosc_bitow = 64
     f_string = get_function(insider)
 
     vfunc = np.vectorize(f_string)
 
-    x_axis = np.arange(GRANICE[0], GRANICE[1], 0.1)
+    x_axis = np.arange(GRANICE[0], GRANICE[1], 0.0001)
 
-    popu = algorytm_genetyczny(32, 100, f_string, 100)
-    x_guess = [dekodowanie(32, individual) for individual in popu]
+    popu = algorytm_genetyczny(ilosc_bitow, 100, f_string, 100, mut_score=0.1)
+    x_guess = [dekodowanie(ilosc_bitow, individual) for individual in popu]
+
+    best_p = sorted(x_guess, key= lambda x: f_string(x))[0]
+
+    print("Najlepszy osiągnięty wynik: {} dla {}".format(vfunc(best_p), best_p))
+
+    plt.plot(best_p, vfunc(best_p), color="green")
 
     plt.title(f"Function {insider}")
 
     plt.plot(x_guess, vfunc(x_guess), '1', color='red')
     plt.plot(x_axis, vfunc(x_axis))
 
-    plt.savefig("")
+    plt.savefig("test.jpg")

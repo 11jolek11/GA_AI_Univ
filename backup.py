@@ -11,9 +11,9 @@ def input_function(x):
     result = eval(func)
     return result
 
-boundries = (-8, 8)
+boundries = (0, 16)
 
-def boundries_based_decode(bit_len,encoded):
+def boundries_based_decode(bit_len: int,encoded: list):
     decoded = list()
     for i in range(len(boundries)):
         start,stop = i*bit_len,(i+1)*bit_len
@@ -43,7 +43,7 @@ def log_based_encode(value, min_value, max_value, num_bits):
 
 def roulette_wheel_selection(populacja,values, k_hipherparameter=3):
     roulette_wheel_selection_losowa = randint(len(populacja))
-    for i in range(0,len(populacja),k_hipherparameter-1):
+    for i in range(0, len(populacja),k_hipherparameter-1):
         if values[i]/sum(values) > values[roulette_wheel_selection_losowa]:
             roulette_wheel_selection_losowa = i
     return populacja[roulette_wheel_selection_losowa]
@@ -71,26 +71,42 @@ def mutate(encoded, mutation_probability=0.01):
         if rand() < mutation_probability:
             encoded[i] = 1 - encoded[i]
 
+def selekcja(populacja,wartosci,k_hipherparametr=3):
+    selekcja_losowa =randint(len(populacja))
+    for i in range(0,len(populacja),k_hipherparametr-1):
+        if wartosci[i] > wartosci[selekcja_losowa]:
+            selekcja_losowa = i
+    return populacja[selekcja_losowa]
+
 def stop_condition(evaluated, epsilon, old_population):
+    print(f"{mean(old_population)} - {mean(evaluated)}")
     if abs(mean(evaluated) - mean(old_population)) <= epsilon:
         return True, mean(evaluated)
 
     return False, mean(evaluated)
 
-def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr):
+def roulette_wheel_selection(populacja, values, k_hipherparameter=3):
+    roulette_wheel_selection_losowa = randint(len(populacja))
+    for i in range(0, len(populacja), k_hipherparameter-1):
+        if values[i]/sum(values) > values[roulette_wheel_selection_losowa]:
+            roulette_wheel_selection_losowa = i
+    return populacja[roulette_wheel_selection_losowa]
+
+
+
+def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,mutacja_hiperparametr):
     populacja = [[randint(2) for _ in range(len(granice)*ilosc_bitow)] for _ in range(ilosc_populacji)]
 
-    sorted(populacja, key= lambda individual: boundries_based_decode(ilosc_bitow, individual) , reverse=True)
-
-    print(populacja)
+    sorted(populacja, key=lambda individual: log_based_decode(ilosc_bitow, individual) , reverse=True)
 
     najlepsze_wartosci = 0
-    najlepsze_populacje = zadana_funkcja(boundries_based_decode(ilosc_bitow, populacja[0]))
+    najlepsze_populacje = zadana_funkcja(log_based_decode(ilosc_bitow, populacja[0]))
 
     stare_wartoci = [0 for _ in range(ilosc_populacji)]
     
     for _ in range(ilosc_iteracji):
-        zdekodowana_populacja = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
+        print("iter")
+        zdekodowana_populacja = [log_based_decode(ilosc_bitow,osobnik) for osobnik in populacja]
         wartosci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_populacja]
         
         for i in range(ilosc_populacji):
@@ -98,29 +114,30 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
                 najlepsze_wartosci, najlepsze_populacje = populacja[i], wartosci[i]
                 print( f"Best value at {zdekodowana_populacja[i][0]} is {wartosci[i]} ")
         
-        stop_signal, _ = stop_condition(wartosci, 1e-6, stare_wartoci)
+        stop_signal, _ = stop_condition(wartosci, 1e-37, stare_wartoci)
         if stop_signal:
-            print(">> STOP CRITERION")
-            break
+            pass
+            print(">> STOP CONDITION")
+            # break
 
-        wybrani_rodzice = [roulette_wheel_selection(populacja,wartosci) for i in range(ilosc_populacji)]
+        # wybrani_rodzice = [roulette_wheel_selection(populacja,wartosci) for i in range(ilosc_populacji)]
+        wybrani_rodzice = [selekcja(populacja,wartosci) for i in range(ilosc_populacji)]
         
         potomstwo = list()
         
         for i in range(0,ilosc_populacji,2):
             rodzic1, rodzic2 = wybrani_rodzice[i], wybrani_rodzice[i+1]
             for dziecko in double_point_cross(rodzic1,rodzic2):
-                mutate(dziecko,mutacja_hiperparametr)
+                mutate(dziecko, mutacja_hiperparametr)
                 potomstwo.append(dziecko)
         populacja = potomstwo
-        zdekodowana_potomstwo = [boundries_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
-        stare_wartoci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_potomstwo]
+        # zdekodowana_potomstwo = [log_based_decode(ilosc_bitow,osobnik) for osobnik in potomstwo]
+        # stare_wartoci = [zadana_funkcja(osobnik) for osobnik in zdekodowana_potomstwo]
     
     
     plt.figure()
-    plt.title(f"Wybrana funkcja {func}")
+    plt.title(f"Funkcja {func}")
   
-    plt.plot(zdekodowana_populacja,wartosci,'x',color='green')
     x_axis = np.arange(granice[0],granice[1],0.1)
 
     # x = np.arange(granice[0],granice[1],0.1)
@@ -128,96 +145,22 @@ def algorytm_genetyczny(zadana_funkcja,granice,ilosc_bitow,ilosc_iteracji,ilosc_
     full_func = eval("lambda x:" + func)
     vfunc = np.vectorize(full_func)
     plt.plot(x_axis, vfunc(x_axis))
+    plt.plot(zdekodowana_populacja,wartosci,'1',color='red')
+    # plt.savefig("./images/test.jpg")
     plt.show()
     return najlepsze_wartosci, najlepsze_populacje
 
 
-granice =[-8,8]
+granice = (0,16)
 ilosc_iteracji = 100
-ilosc_bitow = 16
+ilosc_bitow = 64
 ilosc_populacji = 100
 krzyzowanie_hiperparametr = 0.9
-mutacja_hiperparametr = 1/(ilosc_bitow)
-najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
+mutacja_hiperparametr = 0.01
+# mutacja_hiperparametr = 0.1
+# mutacja_hiperparametr = 0.001
+
+najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,mutacja_hiperparametr)
 print('Najlepszy wynik dla')
-decoded = boundries_based_decode(ilosc_bitow, najlepszy)
+decoded = log_based_decode(ilosc_bitow, najlepszy)
 print('f(%s) = %f' % (decoded[0], wynik))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# granice =[-8,8]
-# ilosc_iteracji_tab = [10,50,100,200,500]
-# ilosc_bitow = 16
-# ilosc_populacji = 100
-# krzyzowanie_hiperparametr = 0.9
-# mutacja_hiperparametr = 1/(ilosc_bitow*len(granice))
-# for ilosc_iteracji in ilosc_iteracji_tab:
-#     najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
-#     print(f'Najlepszy wynik dla iteracji {ilosc_iteracji}')
-#     decoded = boundries_based_decode(granice, ilosc_bitow, najlepszy)
-#     print('f(%s) = %f' % (decoded[0], wynik))
-
-# granice =[-8,8]
-# ilosc_iteracji = 100
-# ilosc_bitow = 16
-# ilosc_populacji = 100
-# krzyzowanie_hiperparametr_tab = [0.1,0.3,0.5,0.7,0.9]
-# mutacja_hiperparametr = 1/(ilosc_bitow*len(granice))
-# for krzyzowanie_hiperparametr in krzyzowanie_hiperparametr_tab:
-#     najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
-#     print(f'Najlepszy wynik dla hiperparametru krzyzowania {krzyzowanie_hiperparametr}')
-#     decoded = boundries_based_decode(granice, ilosc_bitow, najlepszy)
-#     print('f(%s) = %f' % (decoded[0], wynik))
-
-# granice =[-8,8]
-# ilosc_iteracji = 100
-# ilosc_bitow = 16
-# ilosc_populacji_tab = [10,50,100,200,500]
-# krzyzowanie_hiperparametr = 0.9
-# mutacja_hiperparametr = 1/(ilosc_bitow*len(granice))
-# for ilosc_populacji in ilosc_populacji_tab:
-#     najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
-#     print(f'Najlepszy wynik dla populacji {ilosc_populacji}')
-#     decoded = boundries_based_decode(granice, ilosc_bitow, najlepszy)
-#     print('f(%s) = %f' % (decoded[0], wynik))
-
-# granice =[-8,8]
-# ilosc_iteracji = 100
-# ilosc_bitow = 16
-# ilosc_populacji = 100
-# krzyzowanie_hiperparametr = 0.9
-# mutacja_hiperparametr_tab = [0.1,0.3,0.5,0.7,0.9]
-# for mutacja_hiperparametr in mutacja_hiperparametr_tab:
-#     najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
-#     print(f'Najlepszy wynik dla wsp. mutacji {mutacja_hiperparametr}')
-#     decoded = boundries_based_decode(granice, ilosc_bitow, najlepszy)
-#     print('f(%s) = %f' % (decoded[0], wynik))
-
-# granice =[-8,8]
-# ilosc_iteracji_tab = 100
-# ilosc_bitow_tab= [8,16,32,64]
-# ilosc_populacji = 100
-# krzyzowanie_hiperparametr = 0.9
-# mutacja_hiperparametr = 1/(ilosc_bitow*len(granice))
-# for ilosc_bitow in ilosc_bitow_tab:
-#     najlepszy,wynik = algorytm_genetyczny(input_function,granice,ilosc_bitow,ilosc_iteracji,ilosc_populacji,krzyzowanie_hiperparametr,mutacja_hiperparametr)
-#     print(f'Najlepszy wynik dla chromosomu o długości {ilosc_bitow}')
-#     decoded = boundries_based_decode(granice, ilosc_bitow, najlepszy)
-#     print('f(%s) = %f' % (decoded[0], wynik))
